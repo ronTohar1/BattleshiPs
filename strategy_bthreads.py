@@ -11,14 +11,14 @@ def add_progress(name):
 
 all_events = EventSet(lambda event: True)
 
+# We need this so we can choose any event, because bppy checks if event is selectable
 @b_thread
 def request_all_moves():
 	name = "requester"
 	moves = ["e2", "e8", "e4", "e6", "c3v", "d3v", "e3v", "f3v"]
-	moves = mirror_moves(moves)
 	moves = [BEvent(m) for m in moves]
 	while True:
-		event = yield {request: moves}
+		event = yield {request: moves, waitFor: all_events}
 
 
 @b_thread
@@ -47,7 +47,7 @@ strategies_bts = [shiller_opening]
 def create_strategies():
 	# bthreads = [x() for x in strategies_bts + [request_all_moves()]]
     # bthreads = [request_all_moves()]
-    bthreads = [x() for x in strategies_bts]
+    bthreads = [x() for x in strategies_bts] + [request_all_moves()]
     return bthreads
 
 def number_of_bthreads():

@@ -1,9 +1,9 @@
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import util
 from bppy import BProgram
 from bp_wrapper import BPwrapper
-from strategy_bthreads import create_strategies, number_of_bthreads
+from strategy_bthreads import create_strategies, number_of_bthreads, bthreads_progress
 from priority_event_selection_strategy import PriorityEventSelectionStrategy
 import numpy as np
 
@@ -12,9 +12,11 @@ class BPGymEnv(gym.Env):
         self.env = env
         
         self.action_space = env.action_space
-        # bthreads observation space is a tuple of discrete values from -infinity to infinity
-        bthreads_obs_space = spaces.MultiDiscrete([spaces.Discrete(np.infty, start=-np.infty) for _ in range(number_of_bthreads())])
-        self.observation_space = spaces.Tuple((env.observation_space, bthreads_obs_space))
+
+        # bthreads observation space is a box with number of bthreads with each value between -inf and inf, and should be integer
+        bthreads_obs_space = spaces.Box(shape=(number_of_bthreads(),), low=-np.infty, high=np.infty, dtype=np.int32)
+        observation_space = spaces.Tuple((env.observation_space, bthreads_obs_space))
+        self.observation_space = observation_space
 
         # initialize the bprogram containing the strategies
         if (util.ADD_STRATEGIES):
@@ -29,6 +31,7 @@ class BPGymEnv(gym.Env):
         if (util.ADD_STRATEGIES):
             # advance the bprogram
             self.bprog.advance_randomly()
+            observation = (observation, self._get_strategies_progress())
 
         return observation, reward, done, info 
     
@@ -40,3 +43,6 @@ class BPGymEnv(gym.Env):
     
     def close(self):
         return self.env.close()
+
+    def _get_strategies_progress(self):
+        return list(bthreads_progress.values())

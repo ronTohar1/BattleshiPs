@@ -1,6 +1,6 @@
 import numpy as np
 import gym_battleship
-import gym
+import gymnasium as gym
 from collections import namedtuple
 from bp_gym import BPGymEnv
 
@@ -15,7 +15,7 @@ def example_run():
     env = gym.make('Battleship-v0')
     env = BPGymEnv(env)
     print(env.observation_space)
-    print(env.action_space)
+    # print(env.action_space)
     observation, reward, done, info = env.reset(),0, False, {}
     done = True
     # env.render()
