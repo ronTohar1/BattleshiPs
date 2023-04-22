@@ -1,8 +1,8 @@
-import neptune
+# import neptune
 # from neptune.integrations.tensorflow_keras import NeptuneCallback
 from stable_baselines3.dqn import DQN
 import gym_battleship
-import gym
+import gymnasium as gym
 from bp_gym import BPGymEnv
 
 def train():

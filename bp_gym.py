@@ -1,12 +1,12 @@
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import util
 from bppy import BProgram
 from bp_wrapper import BPwrapper
 from strategy_bthreads import create_strategies, number_of_bthreads, bthreads_progress
 from priority_event_selection_strategy import PriorityEventSelectionStrategy
 import numpy as np
-# from gymnasium.spaces.utils import flatten_space, flatten
+from gymnasium.spaces.utils import flatten_space, flatten
 
 class BPGymEnv(gym.Env):
     def __init__(self, env):
@@ -21,7 +21,7 @@ class BPGymEnv(gym.Env):
             bthreads_obs_space = spaces.Box(shape=(number_of_bthreads(),), low=-np.infty, high=np.infty, dtype=np.int32)
             # observation_space = spaces.Tuple((env.observation_space, bthreads_obs_space))
             observation_space = spaces.Dict({'observation': env.observation_space, 'bthreads': bthreads_obs_space})
-            # observation_space = flatten_space(observation_space)
+            observation_space = flatten_space(observation_space)
             self.observation_space = observation_space
 
             self.bprog = BPwrapper()
@@ -36,7 +36,7 @@ class BPGymEnv(gym.Env):
             # advance the bprogram
             self.bprog.advance_randomly()
             observation = (observation, self._get_strategies_progress())
-            # observation = flatten(self.observation_space, observation)
+            observation = flatten(self.observation_space, observation)
         
         return observation, reward, done, info 
     

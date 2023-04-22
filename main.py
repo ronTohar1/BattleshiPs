@@ -1,7 +1,7 @@
 import numpy as np
 import gym_battleship
 # import gymnasium as gym
-import gym
+import gymnasium as gym
 from collections import namedtuple
 from bp_gym import BPGymEnv
 
