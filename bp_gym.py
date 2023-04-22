@@ -44,7 +44,6 @@ class BPGymEnv(gym.Env):
         if (util.ADD_STRATEGIES):
             self._reset_strategies()
             observation = (observation, self._get_strategies_progress())
-            observation = flatten(self.observation_space, observation)
             
         return observation
     
