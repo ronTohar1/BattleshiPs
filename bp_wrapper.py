@@ -24,16 +24,16 @@ class BPwrapper():
 		self.initialized = True
 
 	def advance_randomly(self) -> BEvent:
-		if not self.is_game_finished():
+		# if not self.is_game_finished():
 			# chosen_event = random.choice(tuple(self.selectable_events))
 			# self.choose_event(chosen_event)
 			# return chosen_event
 
-			chosen_event = self.ess.select(self.tickets)
-			self.choose_event(chosen_event)
-			return chosen_event
+		chosen_event = self.ess.select(self.tickets)
+		self.choose_event(chosen_event)
+		return chosen_event
 
-		return None
+		# return None
 
 	def choose_event(self, event: BEvent):
 
