@@ -8,6 +8,9 @@ def reset_progress(name):
 def add_progress(name):
 	bthreads_progress[name] += 1
 
+def reset_all_progress():
+	for name in bthreads_progress:
+		reset_progress(name)
 
 all_events = EventSet(lambda event: True)
 

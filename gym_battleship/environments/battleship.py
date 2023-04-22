@@ -1,6 +1,8 @@
 import gymnasium as gym
+# import gym
 import numpy as np
 from gymnasium import spaces
+# from gym import spaces
 from copy import deepcopy
 from typing import Union
 from typing import Tuple
@@ -57,7 +59,7 @@ class BattleshipEnv(gym.Env):
         self.observation_space = spaces.Box(low=0, high=1, shape=(2, self.board_size[0], self.board_size[1]), dtype=int)
 
     def step(self, raw_action: Union[int, tuple]) -> Tuple[np.ndarray, int, bool, dict]:
-        if isinstance(raw_action, int):
+        if isinstance(raw_action, int) or isinstance(raw_action, np.int64) or isinstance(raw_action, np.int32):
             assert (0 <= raw_action < self.board_size[0]*self.board_size[1]),\
                 "Invalid action (The encoded action is outside of the limits)"
             action = Action(x=raw_action % self.board_size[0], y=raw_action // self.board_size[0])
@@ -68,7 +70,7 @@ class BattleshipEnv(gym.Env):
             action = Action(x=raw_action[0], y=raw_action[1])
 
         else:
-            raise AssertionError("Invalid action (Unsupported raw_action type)")
+            raise AssertionError("Invalid action (Unsupported raw_action type)", raw_action, type(raw_action))
 
         self.step_count += 1
 
