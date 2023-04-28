@@ -11,9 +11,12 @@ def train():
     # run = 
     env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0")
     env = BPGymEnv(env)
+    print("obs space:",env.observation_space.shape)
+    print("obs space:",env.observation_space)
     env = FlattenObservation(env)
+    print("obs space 222: ", env.observation_space.shape)
     dqn = DQN('MlpPolicy', env, verbose=2, tensorboard_log="./tensorboard_log/")
-    dqn.learn(total_timesteps=50000)
+    dqn.learn(total_timesteps=10000)
 
 
 def game_loop():

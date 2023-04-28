@@ -32,7 +32,8 @@ class BPGymEnv(gymnasium.Env):
             self.bprog.advance_randomly()
             obs_strats = self._get_strategies_progress()
             observation = (observation,obs_strats )
-        
+
+        print("observation:", observation)        
         return observation, reward, terminated, truncated, info 
     
     def reset(self,seed=None, options=None):
@@ -43,7 +44,7 @@ class BPGymEnv(gymnasium.Env):
             obs_strats = self._get_strategies_progress()
             observation = (observation,obs_strats )
 
-            
+        print("observation reset:", observation)            
         return observation
     
     def render(self):

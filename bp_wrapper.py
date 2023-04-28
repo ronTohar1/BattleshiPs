@@ -20,9 +20,6 @@ class BPwrapper():
 		self.ess = self.bprog.event_selection_strategy
 		self.tickets = self.bprog.tickets
 		self.selectable_events = self.ess.selectable_events(self.tickets)
-		print("tickets:", self.tickets)
-		print(self.bprog.bthreads)
-		print("Selectable:", self.selectable_events)
 		self.listener = self.bprog.listener
 		self.initialized = True
 
@@ -34,7 +31,7 @@ class BPwrapper():
 
 		chosen_event = self.ess.select(self.tickets)
 		# print("selecteble events:", self.get_selectable_events())
-		print("Chose ", chosen_event)
+		# print("Chose ", chosen_event)
 		self.choose_event(chosen_event)
 		return chosen_event
 
