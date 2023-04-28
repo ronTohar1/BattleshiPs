@@ -6,21 +6,12 @@ from bp_wrapper import BPwrapper
 from strategy_bthreads import create_strategies, number_of_bthreads, bthreads_progress, reset_all_progress
 # from priority_event_selection_strategy import PriorityEventSelectionStrategy
 import numpy as np
-from gymnasium.wrappers.compatibility import EnvCompatibility
-# from gymnasium.wrappers.step_api_compatibility import StepAPICompatibility
-from gymnasium.utils.env_checker import check_env
 from bppy import *
 
 class BPGymEnv(gymnasium.Env):
-    def __init__(self, env):
+    def __init__(self, env): # Expecting an environment with a gymnasium interface
 
         self.env = env
-        try:
-            if not check_env(env):
-                self.env = EnvCompatibility(env)
-        except:
-            self.env = EnvCompatibility(env)
-
         self.action_space = env.action_space
         self.observation_space = env.observation_space
 
@@ -49,7 +40,7 @@ class BPGymEnv(gymnasium.Env):
         observation, info = self.env.reset()
         if (util.ADD_STRATEGIES):
             self._reset_strategies()
-            obs_strats = self._get_strategies_progress() + [1]
+            obs_strats = self._get_strategies_progress()
             observation = (observation,obs_strats )
 
             

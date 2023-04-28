@@ -3,38 +3,32 @@
 from stable_baselines3.dqn import DQN
 import gym_battleship
 import gymnasium
-import gym
+# import gym
 from bp_gym import BPGymEnv
 from gymnasium.wrappers.flatten_observation import FlattenObservation
-from gymnasium.wrappers.compatibility import EnvCompatibility
 
 def train():
     # run = 
-    env = gymnasium.make('Battleship-v0')
+    env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0")
     env = BPGymEnv(env)
     env = FlattenObservation(env)
+    dqn = DQN('MlpPolicy', env, verbose=2, tensorboard_log="./tensorboard_log/")
+    dqn.learn(total_timesteps=50000)
 
-    # model = DQN('MlpPolicy', env, verbose=1, tensorboard_log="./tensorboard/")
-    # model.learn(total_timesteps=10000, callback=NeptuneCallback())
-    # model.learn(total_timesteps=10_000,tb_log_name="first_run")
 
 def game_loop():
-    # env = gymnasium.make('Battleship-v0')
-    env = gymnasium.make("Battleship-v0")
+    env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0")
     env = BPGymEnv(env)
-    env = FlattenObservation(env)
+    # env = FlattenObservation(env)
     obs = env.reset()
     done = False
     while not done:
         action = env.action_space.sample()
         obs, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
-        # print("yea")
-        # print(obs)
-        # env.render()
-        
+        env.render()        
 
 
 if __name__ == '__main__':
-    # train()
-    game_loop()
+    train()
+    # game_loop()

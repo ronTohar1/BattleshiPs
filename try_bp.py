@@ -8,7 +8,11 @@ def main():
     bprog = BProgram(bthreads=bthreads, event_selection_strategy=SimpleEventSelectionStrategy(), listener=PrintBProgramRunnerListener())
     bpw = BPwrapper()
     bpw.reset(bprog)
+    print("Resetted bprog")
     while True:
         bpw.advance_randomly()
+    # bprog.run()
+    # bpw.advance_randomly()
 
-main()
+if __name__ == '__main__':
+    main()
