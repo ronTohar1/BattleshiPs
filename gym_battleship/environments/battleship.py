@@ -1,8 +1,8 @@
-import gymnasium as gym
-# import gym
+# import gymnasium as gym
+import gym
 import numpy as np
-from gymnasium import spaces
-# from gym import spaces
+# from gymnasium import spaces
+from gym import spaces
 from copy import deepcopy
 from typing import Union
 from typing import Tuple
