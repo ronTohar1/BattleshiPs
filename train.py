@@ -59,7 +59,7 @@ def main():
     env = BPGymEnv(env)
     env = FlattenObservation(env) # Flattening observations to be able to use observation space for agent
 
-    learning_rate = args.lr if (args.lr or args.lr == -1) else lambda prog: 0.1 * (1 - prog) + 0.0001 * prog
+    learning_rate = args.lr if (args.lr or args.lr != -1) else lambda prog: 0.1 * (1 - prog) + 0.0001 * prog
     # agent_args = ('MlpPolicy', env, learning_rate=learning_rate, gamma=args.gamma, tensorboard_log=args.log_path, verbose=args.verbose)
     agent_args = {'policy':'MlpPolicy', 'env':env, 'learning_rate':learning_rate, 'gamma':args.gamma, 'tensorboard_log':args.log_path, 'verbose':args.verbose}
     agent = DQN(**agent_args)
