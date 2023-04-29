@@ -18,11 +18,11 @@ def train():
     env = FlattenObservation(env) # Flattening observations to be able to use observation space for agent
     # env = Monitor(env, filename="bla.txt", allow_early_resets=True) # Wrapper from sb3 to monitor more gym info
     log_path ="./tensorboard_log/"
-    agent = DQN('MlpPolicy', env, tensorboard_log=log_path)
+    agent = DQN('MlpPolicy', env, tensorboard_log=log_path,verbose=1,)
     # agent = A2C('MlpPolicy', env)
     # logger = configure(log_path, ["tensorboard", "stdout"])
     # agent.set_logger(logger)
-    agent.learn(total_timesteps=10_000_000, tb_log_name="DQN1", reset_num_timesteps=False, log_interval=5, progress_bar=True)
+    agent.learn(total_timesteps=1_000_000, tb_log_name="DQN2", reset_num_timesteps=True, log_interval=5, progress_bar=False)
 
     # q: how to log the dqn loss?
     # a: https://stable-baselines3.readthedocs.io/en/master/guide/examples.html#logging-progress
