@@ -56,7 +56,7 @@ class BattleshipEnv(gym.Env):
         self.reward_dictionary = {key: reward_dictionary.get(key, default_reward_dictionary[key]) for key in default_reward_dictionary.keys()}
 
         self.action_space = spaces.Discrete(self.board_size[0] * self.board_size[1])
-        self.observation_space = spaces.Box(low=0, high=1, shape=(2, self.board_size[0], self.board_size[1]), dtype=int)
+        self.observation_space = spaces.Box(low=0, high=1, shape=(2, self.board_size[0], self.board_size[1]), dtype=np.int32)
 
     def step(self, raw_action: Union[int, tuple]) -> Tuple[np.ndarray, int, bool, dict]:
         if isinstance(raw_action, int) or isinstance(raw_action, np.int64) or isinstance(raw_action, np.int32):
@@ -104,13 +104,13 @@ class BattleshipEnv(gym.Env):
     def reset(self) -> np.ndarray:
         self._set_board()
         self.board_generated = deepcopy(self.board)
-        self.observation = np.zeros((2, *self.board_size), dtype=np.float32)
+        self.observation = np.zeros((2, *self.board_size), dtype=np.int32)
         self.step_count = 0
         self.done = False
         return self.observation
 
     def _set_board(self) -> None:
-        self.board = np.zeros(self.board_size, dtype=np.float32)
+        self.board = np.zeros(self.board_size, dtype=np.int32)
         for ship_size, ship_count in self.ship_sizes.items():
             for _ in range(ship_count):
                 self._place_ship(ship_size)

@@ -30,10 +30,10 @@ class BPGymEnv(gymnasium.Env):
         if (util.ADD_STRATEGIES):
             # advance the bprogram
             self.bprog.advance_randomly()
-            obs_strats = self._get_strategies_progress()
+            obs_strats = np.array(self._get_strategies_progress())
             observation = (observation,obs_strats )
+    
 
-        print("observation:", observation)        
         return observation, reward, terminated, truncated, info 
     
     def reset(self,seed=None, options=None):
@@ -41,11 +41,10 @@ class BPGymEnv(gymnasium.Env):
         observation, info = self.env.reset()
         if (util.ADD_STRATEGIES):
             self._reset_strategies()
-            obs_strats = self._get_strategies_progress()
-            observation = (observation,obs_strats )
+            obs_strats = np.array(self._get_strategies_progress())
+            observation = (observation, obs_strats )
 
-        print("observation reset:", observation)            
-        return observation
+        return observation, info
     
     def render(self):
         return self.env.render()
