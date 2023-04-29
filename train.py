@@ -32,17 +32,18 @@ def train():
 
 def game_loop():
     env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0")
-    env = BPGymEnv(env)
+    # env = BPGymEnv(env)
+    check_env(env)
     # env = FlattenObservation(env)
-    obs,_ = env.reset()
-    done = False
-    while not done:
-        action = env.action_space.sample()
-        obs, reward, terminated, truncated, info = env.step(action)
-        done = terminated or truncated
-        env.render()        
+    # obs,_ = env.reset()
+    # done = False
+    # while not done:
+    #     action = env.action_space.sample()
+    #     obs, reward, terminated, truncated, info = env.step(action)
+    #     done = terminated or truncated
+    #     env.render()        
 
 
 if __name__ == '__main__':
-    train()
-    # game_loop()
+    # train()
+    game_loop()
