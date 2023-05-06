@@ -11,6 +11,7 @@ from gymnasium.wrappers.flatten_observation import FlattenObservation
 import numpy as np
 from stable_baselines3.common.logger import configure
 import argparse
+import util
 
 def train():
     # run = 
@@ -32,17 +33,19 @@ def train():
 
 
 def game_loop():
+    print("starting game loop")
     env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0")
-    # env = BPGymEnv(env)
-    check_env(env)
-    # env = FlattenObservation(env)
-    # obs,_ = env.reset()
-    # done = False
-    # while not done:
-    #     action = env.action_space.sample()
-    #     obs, reward, terminated, truncated, info = env.step(action)
-    #     done = terminated or truncated
-    #     env.render()        
+    env = BPGymEnv(env)
+    env = FlattenObservation(env)
+    print("Constructed env")
+    obs,_ = env.reset()
+    print("reset done")
+    done = False
+    while not done:
+        action = env.action_space.sample()
+        obs, reward, terminated, truncated, info = env.step(action)
+        done = terminated or truncated
+        # env.render()        
 
 def main():
     parser = argparse.ArgumentParser()
@@ -53,13 +56,15 @@ def main():
     parser.add_argument('--agent','-a',type=str, default='dqn', help='Agent to use for training')
     parser.add_argument('--lr','-lr',type=float, default=None, help='Learning rate for the agent')
     parser.add_argument('--gamma','-g',type=float, default=0.99, help='Discount factor for the agent')
+    parser.add_argument('--bp_strats','-bp',type=bool, default=True, help='Use BP strategies for the agent')
+    # parser.add_argument('--bp_strats','-bp',type=bool, default=False, help='Use BP strategies for the agent')
     args = parser.parse_args()
 
-    env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0")
-    env = BPGymEnv(env)
+    env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0", make_kwargs={'board_size':(util.BOARD_SIZE, util.BOARD_SIZE)})
+    env = BPGymEnv(env, add_strategies=args.bp_strats)
     env = FlattenObservation(env) # Flattening observations to be able to use observation space for agent
 
-    learning_rate = args.lr if (args.lr and args.lr != -1) else lambda prog: 0.1 * (1 - prog) + 0.0001 * prog
+    learning_rate = args.lr if (args.lr and args.lr != -1) else lambda prog: 0.00001 * (1 - prog) + 0.01 * prog
     # agent_args = ('MlpPolicy', env, learning_rate=learning_rate, gamma=args.gamma, tensorboard_log=args.log_path, verbose=args.verbose)
     agent_args = {'policy':'MlpPolicy', 'env':env, 'learning_rate':learning_rate, 'gamma':args.gamma, 'tensorboard_log':args.log_path, 'verbose':args.verbose}
     agent = DQN(**agent_args)
@@ -69,8 +74,8 @@ def main():
         agent = PPO(**agent_args)
 
     num_ep = args.episodes / 1_000_000
-    run_name = f"{args.agent}_{num_ep}M_α-{args.lr if args.lr else 'λ'}_Γ-{args.gamma}"
-    agent.learn(total_timesteps=args.episodes, tb_log_name=run_name, reset_num_timesteps=True, log_interval=5, progress_bar=False)
+    run_name = f"{args.agent}_{num_ep}M_alpha-{args.lr if (args.lr and args.lr!=-1) else 'function'}_gamma-{args.gamma}"
+    agent.learn(total_timesteps=args.episodes, tb_log_name=run_name, reset_num_timesteps=True, log_interval=100, progress_bar=False)
         
 if __name__ == '__main__':
     main()
