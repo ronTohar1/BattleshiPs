@@ -32,7 +32,7 @@ class BPGymEnv(gymnasium.Env):
             self.bprog.advance_randomly()
             obs_strats = np.array(self._get_strategies_progress())
             observation = (observation,obs_strats )
-            print(obs_strats)
+            # print(obs_strats)
     
         return observation, reward, terminated, truncated, info 
     

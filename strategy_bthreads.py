@@ -77,7 +77,7 @@ def fire_in_middle():
 def dont_fire_if_missed_twice_in_segment():
 	"""This strategy goes up if we hit a segment third time (which we already missed twice)"""
 	name = "dont_fire_if_missed_twice_in_segment"
-	segment_size = bsize//2 - 1 # 4 for 10x10 board
+	segment_size = bsize//3 # 3 for 10x10 board
 	prev_action = None
 	prev_prev_action = None
 	reset_progress(name)
@@ -94,17 +94,57 @@ def dont_fire_if_missed_twice_in_segment():
 			if not_hit_cells[previous_action[0]][previous_action[1]] == 1 and not_hit_cells[prev_prev_action[0]][prev_prev_action[1]] == 1:
 				# if we are in the same segment:
 				if perform_segment(prev_action, prev_prev_action):
-					#  if the action is in the segment (in between the previous actions) - add progress
+					#  if the action is in the same segment as the previous 2 actions: add progress
 					if perform_segment(prev_action, action) and perform_segment(prev_prev_action, action):
 						add_progress(name)
 				
 		previous_action = action
 		prev_prev_action = previous_action
 
+def dont_fire_pairs():
+	"""This strategy goes up if we, in the first 20 moves, hit a pair of cells"""
+	name = "dont_fire_pairs"
+	num_moves = bsize**2 // 5
+	previous_action = None
+	reset_progress(name)
+	for i in range(num_moves):
+		event = yield {waitFor: pred_all_events}
+		action = get_tuple_action(event.name)
 
+		hit_cells, not_hit_cells = state[0], state[1]
+		if previous_action and not_hit_cells[action[0]][action[1]] == 1:
+			if previous_action[0] == action[0] or previous_action[1] == action[1]:
+				add_progress(name)
+		else:
+			kill_progress(name)
+		previous_action = action
+
+
+# Not finished!
+def focus_on_one_ship():
+	"""	This strategy goes up if we hit a ship, and we then fire around the area we hit, in order
+	  	to encourage focusing a single ship to drown.
+		We will try hitting 2 other cells that are adjacent. 
+	"""
+	name = "focus_on_one_ship"
+	previous_action = None
+	reset_progress(name)
+	def distance(a1,a2):
+		return abs(a1[0]-a2[0]) + abs(a1[1]-a2[1])
+	while True:
+		event = yield {waitFor: pred_all_events}
+		action = get_tuple_action(event.name)
+		hit_cells, not_hit_cells = state[0], state[1]
+		if previous_action and hit_cells[previous_action[0]][previous_action[1]] == 1:
+			if distance(previous_action, action) == 1:
+				if hit_cells[action[0]][action[1]] == 0:
+					pass
 
 # strategies_bts = []
-strategies_bts = [fire_in_middle]
+strategies_bts = [	fire_in_middle,
+		  			dont_fire_if_missed_twice_in_segment,
+					dont_fire_pairs
+				]
 
 def create_strategies():
 	# bthreads = [x() for x in strategies_bts + [request_all_moves()]]
