@@ -102,7 +102,9 @@ def dont_fire_if_missed_twice_in_segment():
 		prev_prev_action = previous_action
 
 def dont_fire_pairs():
-	"""This strategy goes up if we, in the first 20 moves, hit a pair of cells"""
+	"""This strategy goes up if we, in the first 20 moves, hit a pair of cells.
+	This is because we want to spread our fire, and shoot in places that differ by
+	the size of the smallest ship (2)"""
 	name = "dont_fire_pairs"
 	num_moves = bsize**2 // 5
 	previous_action = None
@@ -135,15 +137,26 @@ def focus_on_one_ship():
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
 		hit_cells, not_hit_cells = state[0], state[1]
-		if previous_action and hit_cells[previous_action[0]][previous_action[1]] == 1:
-			if distance(previous_action, action) == 1:
+		if not previous_action:
+			previous_action = action
+		elif hit_cells[previous_action[0]][previous_action[1]] == 1: # if we hit a ship
+			if distance(previous_action, action) == 1: # if we hit a cell adjacent to the previous action
 				if hit_cells[action[0]][action[1]] == 0:
-					pass
+					add_progress(name) # good move and keep trying another adjacent cell next time
+					previous_action = action
+				else: # Not hit a ship - try again and focus on the previous place that got hit
+					pass # dont change previous action because we want to focus on the place we hit
+			else:
+				kill_progress(name)
+				previous_action = action
+
+
 
 # strategies_bts = []
 strategies_bts = [	fire_in_middle,
 		  			dont_fire_if_missed_twice_in_segment,
-					dont_fire_pairs
+					dont_fire_pairs,
+					focus_on_one_ship
 				]
 
 def create_strategies():
