@@ -74,7 +74,7 @@ def main():
         agent = PPO(**agent_args)
 
     num_ep = args.episodes / 1_000_000
-    run_name = f"{args.agent}_{num_ep}M_alpha-{args.lr if (args.lr and args.lr!=-1) else 'function'}_gamma-{args.gamma}"
+    run_name = f"{args.agent}_{num_ep}M_alpha-{args.lr if (args.lr and args.lr!=-1) else 'function'}_gamma-{args.gamma}"+("_bp" if args.bp_strats else "")
     agent.learn(total_timesteps=args.episodes, tb_log_name=run_name, reset_num_timesteps=True, log_interval=100, progress_bar=False)
         
 if __name__ == '__main__':
