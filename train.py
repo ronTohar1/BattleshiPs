@@ -12,6 +12,7 @@ import numpy as np
 from stable_baselines3.common.logger import configure
 import argparse
 import util
+import torch as th
 
 def train():
     # run = 
@@ -57,6 +58,7 @@ def main():
     parser.add_argument('--lr','-lr',type=float, default=None, help='Learning rate for the agent')
     parser.add_argument('--gamma','-g',type=float, default=0.99, help='Discount factor for the agent')
     parser.add_argument('--bp_strats','-bp',type=bool, default=True, help='Use BP strategies for the agent')
+    parser.add_argument('--net_arch','-na',type=str, default='[64,64]', help='Network architecture for the agent')
     # parser.add_argument('--bp_strats','-bp',type=bool, default=False, help='Use BP strategies for the agent')
     args = parser.parse_args()
 
@@ -64,9 +66,12 @@ def main():
     env = BPGymEnv(env, add_strategies=args.bp_strats)
     env = FlattenObservation(env) # Flattening observations to be able to use observation space for agent
 
+    # default net for ppo/dqn/a2c is 2 hidden layers with 64 neurons each
+    net_arch = eval(args.net_arch)
+    policy_kwargs = dict(activation_fn=th.nn.ReLU,
+                     net_arch=dict(pi=net_arch, vf=net_arch))
     learning_rate = args.lr if (args.lr and args.lr != -1) else lambda prog: 0.00001 * (1 - prog) + 0.01 * prog
-    # agent_args = ('MlpPolicy', env, learning_rate=learning_rate, gamma=args.gamma, tensorboard_log=args.log_path, verbose=args.verbose)
-    agent_args = {'policy':'MlpPolicy', 'env':env, 'learning_rate':learning_rate, 'gamma':args.gamma, 'tensorboard_log':args.log_path, 'verbose':args.verbose}
+    agent_args = {'policy':'MlpPolicy', 'env':env, 'learning_rate':learning_rate, 'gamma':args.gamma, 'tensorboard_log':args.log_path, 'verbose':args.verbose, 'policy_kwargs':policy_kwargs}
     agent = DQN(**agent_args)
     if args.agent.lower() == 'a2c':
         agent = A2C(**agent_args)
