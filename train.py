@@ -69,9 +69,16 @@ def main():
     # default net for ppo/dqn/a2c is 2 hidden layers with 64 neurons each
     net_arch = eval(args.net_arch)
     policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                     net_arch=dict(pi=net_arch, vf=net_arch))
+                     net_arch=net_arch)
     learning_rate = args.lr if (args.lr and args.lr != -1) else lambda prog: 0.00001 * (1 - prog) + 0.01 * prog
-    agent_args = {'policy':'MlpPolicy', 'env':env, 'learning_rate':learning_rate, 'gamma':args.gamma, 'tensorboard_log':args.log_path, 'verbose':args.verbose, 'policy_kwargs':policy_kwargs}
+    agent_args = {  'policy':'MlpPolicy',
+                    'env':env,
+                    'learning_rate':learning_rate,
+                    'gamma':args.gamma,
+                    'tensorboard_log':args.log_path, 
+                    'verbose':args.verbose, 
+                    'policy_kwargs':policy_kwargs
+                }
     agent = DQN(**agent_args)
     if args.agent.lower() == 'a2c':
         agent = A2C(**agent_args)
@@ -79,7 +86,7 @@ def main():
         agent = PPO(**agent_args)
 
     num_ep = args.episodes / 1_000_000
-    run_name = f"{args.agent}_{num_ep}M_alpha-{args.lr if (args.lr and args.lr!=-1) else 'function'}_gamma-{args.gamma}"+("_bp" if args.bp_strats else "")
+    run_name = f"{args.agent}_{num_ep}M_alpha-{args.lr if (args.lr and args.lr!=-1) else 'function'}_gamma-{args.gamma}_arch-{net_arch}"+("_bp" if args.bp_strats else "")
     agent.learn(total_timesteps=args.episodes, tb_log_name=run_name, reset_num_timesteps=True, log_interval=100, progress_bar=False)
         
 if __name__ == '__main__':

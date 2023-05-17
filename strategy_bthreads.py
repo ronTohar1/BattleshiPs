@@ -61,8 +61,6 @@ def fire_in_middle():
 	for i in range(num_moves):
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
-		print(f"Action: {action}")
-		print('moves', moves)
 		if action in moves and not action in previous_moves:
 			previous_moves.append(action)
 			add_progress(name)
