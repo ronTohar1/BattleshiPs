@@ -60,7 +60,7 @@ def main():
     parser.add_argument('--bp_strats','-bp',action="store_true", help='Use BP strategies for the agent')
     parser.add_argument('--no_bp_strats','-nobp',action="store_true", help='Dont use BP strategies for the agent')
     parser.add_argument('--net_arch','-na',type=str, default='[64,64]', help='Network architecture for the agent')
-    parser.add_argument('--activation_fn','-af',type=str, default='tahn', help='Activation function for the agent')
+    parser.add_argument('--activation_fn','-af',type=str, default='tanh', help='Activation function for the agent')
     # parser.add_argument('--bp_strats','-bp',type=bool, default=False, help='Use BP strategies for the agent')
     args = parser.parse_args()
 
