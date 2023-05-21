@@ -7,12 +7,14 @@ import gym_battleship
 import gymnasium
 # import gym
 from bp_gym import BPGymEnv
+from wrap_battleships import BattleshipsWrapper
 from gymnasium.wrappers.flatten_observation import FlattenObservation
 import numpy as np
 from stable_baselines3.common.logger import configure
 import argparse
 import util
 import torch as th
+from custom_cnn import BattleshipsCNN
 
 def train():
     # run = 
@@ -54,48 +56,63 @@ def main():
     parser.add_argument('--episodes','-e',type=int, default=3_000_000, help='Number of episodes to train the agent')
     parser.add_argument('--log_path','-l',type=str, default='./tensorboard_log/', help='Name of the log file')
     parser.add_argument('--verbose','-v',type=int, default=0, help='Verbosity of the agent')
-    parser.add_argument('--agent','-a',type=str, default='a2c', help='Agent to use for training')
-    parser.add_argument('--lr','-lr',type=float, default=None, help='Learning rate for the agent')
+    parser.add_argument('--agent','-a',type=str, default='a2c', choices=['a2c','dqn','ppo'], help='Agent to use for training')
+    parser.add_argument('--lr','-lr',type=float, default=0.0001, help='Learning rate for the agent')
     parser.add_argument('--gamma','-g',type=float, default=0.99, help='Discount factor for the agent')
     parser.add_argument('--bp_strats','-bp',action="store_true", help='Use BP strategies for the agent')
     parser.add_argument('--no_bp_strats','-nobp',action="store_true", help='Dont use BP strategies for the agent')
     parser.add_argument('--net_arch','-na',type=str, default='[64,64]', help='Network architecture for the agent')
-    parser.add_argument('--activation_fn','-af',type=str, default='tanh', help='Activation function for the agent')
-    # parser.add_argument('--bp_strats','-bp',type=bool, default=False, help='Use BP strategies for the agent')
+    parser.add_argument('--activation_fn','-af',type=str, default='tanh', choices=['tanh','relu'], help='Activation function for the agent')
+    parser.add_argument('--policy','-p',type=str, default='CnnPolicy', choices=['MlpPolicy', 'CnnPolicy'], help='Policy to use for the agent')
     args = parser.parse_args()
 
+
+    
     num_ep = args.episodes / 1_000_000
     using_strategies = args.bp_strats
     net_arch = eval(args.net_arch)
-    activation_fn = th.nn.Tanh if args.activation_fn.lower() == 'tanh' else th.nn.ReLU
+    activation_fn_name = args.activation_fn.lower()
+    activation_fn = th.nn.Tanh if activation_fn_name == 'tanh' else th.nn.ReLU
     # default net for ppo/dqn/a2c is 2 hidden layers with 64 neurons each
-    policy_kwargs = dict(activation_fn=activation_fn,
+    policy_kwargs = dict(activation_fn=activation_fn, 
                      net_arch=net_arch)
-
-    env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0", make_kwargs={'board_size':(util.BOARD_SIZE, util.BOARD_SIZE)})
-    env = BPGymEnv(env, add_strategies=using_strategies)
-    env = FlattenObservation(env) # Flattening observations to be able to use observation space for agent
+    learning_rate = args.lr if (args.lr and args.lr != -1) else lambda prog: 0.00001 * (1 - prog) + 0.01 * prog
+    gamma = args.gamma
+    log_path = args.log_path
+    verbose = args.verbose
+    agent_name = args.agent.lower()
+    policy = args.policy
+    if policy == 'CnnPolicy':
+        policy_kwargs["features_extractor_class"] = BattleshipsCNN
+        policy_kwargs["features_extractor_kwargs"] = {"normalized_image":True} # All normalized (0 or 1 anyways)
 
     
-    learning_rate = args.lr if (args.lr and args.lr != -1) else lambda prog: 0.00001 * (1 - prog) + 0.01 * prog
-    agent_args = {  'policy':'MlpPolicy',
+    env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0", make_kwargs={'board_size':(util.BOARD_SIZE, util.BOARD_SIZE)})
+    env = BattleshipsWrapper(env) # Wrapping the env to be 1 channel instead of 2 channels of the board
+    # env = BPGymEnv(env, add_strategies=using_strategies)
+    # env = FlattenObservation(env) # Flattening observations to be able to use observation space for agent
+
+    
+    agent_args = {  'policy': policy,
                     'env':env,
                     'learning_rate':learning_rate,
-                    'gamma':args.gamma,
-                    'tensorboard_log':args.log_path, 
-                    'verbose':args.verbose, 
+                    'gamma':gamma,
+                    'tensorboard_log':log_path, 
+                    'verbose':verbose, 
                     # 'policy_kwargs':policy_kwargs
                 }
     agent = None
-    if args.agent.lower() == 'dqn':
+    if agent_name == 'dqn':
         agent = DQN(policy_kwargs=policy_kwargs, **agent_args)
-    elif args.agent.lower() == 'a2c':
+    elif agent_name == 'a2c':
         agent = A2C(policy_kwargs=policy_kwargs ,**agent_args)
-    elif args.agent.lower() == 'ppo':
+    elif agent_name == 'ppo':
         agent = PPO(policy_kwargs=policy_kwargs, **agent_args)
 
-    run_name = f"{args.agent}_{num_ep}M_alpha-{args.lr if (args.lr and args.lr!=-1) else 'function'}_gamma-{args.gamma}_arch-{net_arch}_af-{args.activation_fn}"+("_bp" if args.bp_strats else "")
-    agent.learn(total_timesteps=args.episodes, tb_log_name=run_name, reset_num_timesteps=True, log_interval=100, progress_bar=False)
+    print("Using strategies: ", using_strategies)
+    print(agent)
+    run_name = f"{agent_name}_{num_ep}M_alpha-{learning_rate if (learning_rate!=-1) else 'function'}_gamma-{gamma}_arch-{net_arch}_af-{activation_fn_name}"+("_bp" if using_strategies else "")
+    # agent.learn(total_timesteps=args.episodes, tb_log_name=run_name, reset_num_timesteps=True, log_interval=100, progress_bar=False)
         
 if __name__ == '__main__':
     main()
