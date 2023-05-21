@@ -18,8 +18,8 @@ class BattleshipsWrapper(gymnasium.Env):
     
 
     def step(self, action):
-        observation, reward, done, info = self.env.step(action)
-        return self._modify_observation(observation), reward, done, info
+        observation, reward, terminated, truncated, info = self.env.step(action)
+        return self._modify_observation(observation), reward, terminated, truncated, info
     
     def reset(self):
         observation, info = self.env.reset()
