@@ -6,6 +6,7 @@ from strategy_bthreads import create_strategies, number_of_bthreads, bthreads_pr
 # from priority_event_selection_strategy import PriorityEventSelectionStrategy
 import numpy as np
 from bppy import *
+from util import BOARD_SIZE
 
 class BPGymEnv(gymnasium.Env):
     def __init__(self, env, add_strategies=False): # Expecting an environment with a gymnasium interface
@@ -16,9 +17,8 @@ class BPGymEnv(gymnasium.Env):
 
         # initialize the bprogram containing the strategies
         if (self.add_strategies):
-            # bthreads observation space is a box with number of bthreads with each value between -inf and inf, and should be integer
-            bthreads_obs_space = spaces.Box(shape=(number_of_bthreads(),), low=-np.infty, high=np.infty, dtype=np.int32)
-            observation_space = spaces.Tuple((env.observation_space, bthreads_obs_space))
+            channels = env.observation_space.shape[0]
+            observation_space = spaces.Box(shape=(number_of_bthreads() + channels, BOARD_SIZE, BOARD_SIZE), low=0, high=1, dtype=np.float32)
             self.observation_space = observation_space
             self.bprog = BPwrapper()
 
@@ -29,7 +29,7 @@ class BPGymEnv(gymnasium.Env):
 
         if (self.add_strategies):
             # advance the bprogram
-            self.bprog.advance_randomly()
+            self.bprog.choose_event(action)
             obs_strats = np.array(self._get_strategies_progress())
             observation = (observation,obs_strats )
             # print(obs_strats)
