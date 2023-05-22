@@ -52,8 +52,8 @@ def request_all_moves():
 def fire_in_middle():
 	"""Strategy to fire in the middle for the first BOARD_SIZE^2/20 moves (5 moves)"""
 	name = "Fire_In_Middle"
-	num_moves = bsize**2 // 20
-	left_up, down_right = 3, bsize-4 # (3,3) to (6,6) for 10x10 board
+	num_moves = bsize**2 // 10 # 5 for 10x10 board
+	left_up, down_right = 2, bsize-3 # (2,2) to (7,7) for 10x10 board
 	moves = [(x,y) for x in range(left_up, down_right+1) for y in range(left_up, down_right+1)]
 	events = bevent_wrapper(moves)
 	previous_moves = []
@@ -61,7 +61,6 @@ def fire_in_middle():
 	for i in range(num_moves):
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
-		print("Got Action: ", action)
 		if action in moves and not action in previous_moves:
 			previous_moves.append(action)
 			add_progress(name)

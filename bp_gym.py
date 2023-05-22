@@ -35,7 +35,7 @@ class BPGymEnv(gymnasium.Env):
     def step(self, action):
         observation, reward, terminated, truncated, info = self.env.step(action)
         set_state(observation)
-        print("Chose Action: ", self._get_tuple_action(action))
+        
         if (self.add_strategies):
             # advance the bprogram
             self.bprog.choose_event(BEvent(str(self._get_tuple_action(action))))
