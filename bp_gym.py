@@ -6,6 +6,7 @@ from strategy_bthreads import create_strategies, number_of_bthreads, bthreads_pr
 # from priority_event_selection_strategy import PriorityEventSelectionStrategy
 import numpy as np
 from bppy import *
+from util import BOARD_SIZE
 
 class BPGymEnv(gymnasium.Env):
     def __init__(self, env, add_strategies=False): # Expecting an environment with a gymnasium interface
@@ -22,14 +23,22 @@ class BPGymEnv(gymnasium.Env):
             self.observation_space = observation_space
             self.bprog = BPwrapper()
 
+    def _get_tuple_action(self, action):
+        if isinstance(action, str):
+            action = eval(action) # should convert to int or tuple
+        if isinstance(action, np.int32) or isinstance(action, np.int64) or isinstance(action, int):
+            return (action % BOARD_SIZE, action // BOARD_SIZE)
+        if not isinstance(action, tuple):
+            raise Exception("Action must be tuple or int, real type - ", type(action))
+        return action
 
     def step(self, action):
         observation, reward, terminated, truncated, info = self.env.step(action)
         set_state(observation)
-
+        print("Chose Action: ", self._get_tuple_action(action))
         if (self.add_strategies):
             # advance the bprogram
-            self.bprog.advance_randomly()
+            self.bprog.choose_event(BEvent(str(self._get_tuple_action(action))))
             obs_strats = np.array(self._get_strategies_progress())
             observation = (observation,obs_strats )
             # print(obs_strats)

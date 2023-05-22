@@ -31,7 +31,7 @@ def bevent_wrapper(event_list):
 def get_tuple_action(action):
 	if isinstance(action, str):
 		action = eval(action) # should convert to int or tuple
-	if isinstance(action, int):
+	if isinstance(action, int) or isinstance(action, np.int32) or isinstance(action, np.int64):
 		return (action % bsize, action // bsize)
 	if not isinstance(action, tuple):
 		raise Exception("Action must be tuple or int")
@@ -61,6 +61,7 @@ def fire_in_middle():
 	for i in range(num_moves):
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
+		print("Got Action: ", action)
 		if action in moves and not action in previous_moves:
 			previous_moves.append(action)
 			add_progress(name)

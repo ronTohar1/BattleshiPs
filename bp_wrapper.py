@@ -38,7 +38,6 @@ class BPwrapper():
 		# return None
 
 	def choose_event(self, event: BEvent):
-
 		if event not in self.selectable_events:
 			raise Exception("Tried to choose blocked event!")
 		self.listen(event)
