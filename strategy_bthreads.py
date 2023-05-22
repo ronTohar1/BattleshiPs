@@ -1,6 +1,8 @@
 from bppy import *
 from util import BOARD_SIZE as bsize
 from itertools import product
+from gymnasium import spaces
+import numpy as np
 
 bthreads_progress = {}
 
@@ -9,6 +11,9 @@ state = None
 def set_state(s):
 	global state
 	state = s
+
+def get_new_space():
+	return np.zeros((bsize, bsize))
 
 def reset_progress(name):
 	bthreads_progress[name] = 0
@@ -52,9 +57,12 @@ def request_all_moves():
 def fire_in_middle():
 	"""Strategy to fire in the middle for the first BOARD_SIZE^2/20 moves (5 moves)"""
 	name = "Fire_In_Middle"
-	num_moves = bsize**2 // 20
-	left_up, down_right = 3, bsize-4 # (3,3) to (6,6) for 10x10 board
+	num_moves = bsize**2 // 10 # 10 for 10x10 board
+	left_up, down_right = 2, bsize-3 # (2,2) to (7,7) for 10x10 board
 	moves = [(x,y) for x in range(left_up, down_right+1) for y in range(left_up, down_right+1)]
+
+	strategy_space = spaces.Box(low=0, high=1, shape=(bsize,bsize), dtype=np.float32)
+
 	events = bevent_wrapper(moves)
 	previous_moves = []
 	reset_progress(name)
@@ -150,12 +158,12 @@ def focus_on_one_ship():
 
 
 
-# strategies_bts = []
-strategies_bts = [	fire_in_middle,
-		  			dont_fire_if_missed_twice_in_segment,
-					dont_fire_pairs,
-					focus_on_one_ship
-				]
+strategies_bts = [fire_in_middle]
+# strategies_bts = [	fire_in_middle,
+# 		  			dont_fire_if_missed_twice_in_segment,
+# 					dont_fire_pairs,
+# 					focus_on_one_ship
+# 				]
 
 def create_strategies():
 	# bthreads = [x() for x in strategies_bts + [request_all_moves()]]

@@ -15,6 +15,7 @@ import argparse
 import util
 import torch as th
 from custom_cnn import BattleshipsCNN
+from resnet import ResNetCNN
 
 def train():
     # run = 
@@ -65,6 +66,7 @@ def main():
     parser.add_argument('--activation_fn','-af',type=str, default='tanh', choices=['tanh','relu'], help='Activation function for the agent')
     parser.add_argument('--policy','-p',type=str, default='CnnPolicy', choices=['MlpPolicy', 'CnnPolicy'], help='Policy to use for the agent')
     parser.add_argument('--features_dim','-fd',type=int, default=512, help='Number of features for the last layer of the CNN')
+    parser.add_argument('--model_type','-mt',type=str, default='cnn', choices=['resnet','cnn'], help='Type of model to use for the agent')
     args = parser.parse_args()
 
 
@@ -84,10 +86,14 @@ def main():
     agent_name = args.agent.lower()
     policy = args.policy
     features_dim = args.features_dim
+    model_type = args.model_type.lower()
+    model = BattleshipsCNN if model_type == 'cnn' else ResNetCNN
+
     if policy == 'CnnPolicy':
-        policy_kwargs["features_extractor_class"] = BattleshipsCNN
+        policy_kwargs["features_extractor_class"] = model
         policy_kwargs["features_extractor_kwargs"] = {"normalized_image":True,
-                                                      "features_dim": features_dim} # All normalized (0 or 1 anyways)
+                                                      "features_dim": features_dim,
+                                                      "activation_fn": activation_fn} # All normalized (0 or 1 anyways)
 
     
     env = gymnasium.make("GymV21Environment-v0", env_id="Battleship-v0", make_kwargs={'board_size':(util.BOARD_SIZE, util.BOARD_SIZE)})
@@ -117,7 +123,7 @@ def main():
     # run_name = f"{agent_name}_{num_ep}M_alpha-{learning_rate if (learning_rate!=-1) else 'function'}_gamma-{gamma}_arch-{net_arch}_af-{activation_fn_name}_pol-{policy}_feature_dim-{features_dim}"+("_bp" if using_strategies else "")
     run_name = f"{agent_name}_{num_ep}M_alpha-{learning_rate if (learning_rate!=-1) else 'function'}_gamma-{gamma}_arch-{net_arch}_pol-{policy}"
     if policy == 'CnnPolicy':
-        run_name += f"_feature_dim-{features_dim}"
+        run_name += f"_feature_dim-{features_dim}_model-{model_type}"
     elif policy == 'MlpPolicy':
         run_name += f"_af-{activation_fn_name}"
     run_name = run_name+("_BP" if using_strategies else "_NOPB")

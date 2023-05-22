@@ -1,4 +1,5 @@
 
+from typing import Type
 import torch as th
 import torch.nn as nn
 import gymnasium as gym
@@ -27,6 +28,7 @@ class BattleshipsCNN(BaseFeaturesExtractor):
         observation_space: gym.Space,
         features_dim: int = 512,
         normalized_image: bool = False,
+        activation_fn: Type[nn.Module] = nn.ReLU,
     ) -> None:
         assert isinstance(observation_space, spaces.Box), (
             "NatureCNN must be used with a gym.spaces.Box ",
@@ -47,13 +49,18 @@ class BattleshipsCNN(BaseFeaturesExtractor):
             "https://stable-baselines3.readthedocs.io/en/master/guide/custom_env.html"
         )
         n_input_channels = observation_space.shape[0]
+
+        # Want to use 'same convolution' type of padding (padding='same'), and need for that stride=1
+        # https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 32, kernel_size=2, stride=4, padding=0),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=0),
-            nn.ReLU(),
-            # nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0),
-            # nn.ReLU(),
+            nn.Conv2d(n_input_channels, 32, kernel_size=3, stride=1, padding='same',),
+            activation_fn(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding='same'),
+            activation_fn(),
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding='same'),
+            activation_fn(),
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=0),
+            activation_fn(),
             nn.Flatten(),
         )
 
