@@ -2,7 +2,7 @@ import gymnasium
 from gymnasium import spaces
 from bppy import BProgram
 from bp_wrapper import BPwrapper
-from strategy_bthreads import create_strategies, number_of_bthreads, bthreads_progress, reset_all_progress, set_state
+from strategy_bthreads import create_strategies, number_of_bthreads, bthreads_progress, reset_all_strategies, set_state
 # from priority_event_selection_strategy import PriorityEventSelectionStrategy
 import numpy as np
 from bppy import *
@@ -23,18 +23,32 @@ class BPGymEnv(gymnasium.Env):
             self.bprog = BPwrapper()
 
 
+    def _get_tuple_action(self, action):
+        if isinstance(action, str):
+            action = eval(action) # should convert to int or tuple
+        if isinstance(action, np.int32) or isinstance(action, np.int64) or isinstance(action, int):
+            return (action % BOARD_SIZE, action // BOARD_SIZE)
+        if not isinstance(action, tuple):
+            raise Exception("Action must be tuple or int, real type - ", type(action))
+        return action
+
+    def _concat_observations(self, env_obs, bp_obs):
+        return np.concatenate((env_obs, bp_obs), axis=0)
+
     def step(self, action):
         observation, reward, terminated, truncated, info = self.env.step(action)
         set_state(observation)
-
+        
         if (self.add_strategies):
             # advance the bprogram
-            self.bprog.choose_event(action)
-            obs_strats = np.array(self._get_strategies_progress())
-            observation = (observation,obs_strats )
+            self.bprog.choose_event(BEvent(str(self._get_tuple_action(action))))
+            bp_obs = self._get_strategies_progress()
+            observation = self._concat_observations(observation, bp_obs)
             # print(obs_strats)
+            print(observation)
     
         return observation, reward, terminated, truncated, info 
+    
     
     def reset(self,seed=None, options=None):
 
@@ -43,8 +57,9 @@ class BPGymEnv(gymnasium.Env):
 
         if (self.add_strategies):
             self._reset_strategies()
-            obs_strats = np.array(self._get_strategies_progress())
-            observation = (observation, obs_strats )
+            obs_strats = self._get_strategies_progress()
+            observation = self._concat_observations(observation, obs_strats)
+            print("reset observation:",observation)
 
         return observation, info
     
@@ -55,9 +70,10 @@ class BPGymEnv(gymnasium.Env):
         return self.env.close()
 
     def _get_strategies_progress(self):
-        return list(bthreads_progress.values())
+        strategies = bthreads_progress.values()
+        return np.array([np.array(strategy) for strategy in strategies])
     
     def _reset_strategies(self):
         bprogram = BProgram(bthreads=create_strategies(), event_selection_strategy=SimpleEventSelectionStrategy())
         self.bprog.reset(bprogram)
-        reset_all_progress()
+        reset_all_strategies()

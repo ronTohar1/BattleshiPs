@@ -20,8 +20,11 @@ def reset_strategy(name):
 	bthreads_progress[name] = get_new_space()
 
 def update_strategy(name, space):
-	if not strategy_space.contains(space):
-		raise Exception("Strategy space does not contain the space given")
+	# if not strategy_space.contains(space):
+	# 	if np.can_cast(space.dtype, np.float32):
+	# 		raise Exception("space is not of type float32 and cannot be casted", space.dtype)
+		
+	# 	raise Exception(f"Strategy space does not contain the space given\nspace - {space}, strategy_space - {strategy_space}, shape = {space.shape},{strategy_space.shape}")
 	bthreads_progress[name] = space
 
 # put array of -1 in all places
@@ -45,10 +48,10 @@ def bevent_wrapper(event_list):
 def get_tuple_action(action):
 	if isinstance(action, str):
 		action = eval(action) # should convert to int or tuple
-	if isinstance(action, int):
+	if isinstance(action, np.int32) or isinstance(action, np.int64) or isinstance(action, int):
 		return (action % bsize, action // bsize)
 	if not isinstance(action, tuple):
-		raise Exception("Action must be tuple or int")
+		raise Exception("Action must be tuple or int, real type - ", type(action))
 	return action
 
 
@@ -76,6 +79,7 @@ def fire_in_middle():
 	strategy = get_new_space()
 	for move in moves:
 		strategy[move] = 1	
+	update_strategy(name, strategy)
 
 	previous_moves = []
 	for i in range(num_moves):
@@ -92,53 +96,80 @@ def fire_in_middle():
 		# hit_cells, not_hit_cells = state[0], state[1]
 
 
-# @b_thread
-# def dont_fire_if_missed_twice_in_segment():
-# 	"""This strategy goes up if we hit a segment third time (which we already missed twice)"""
-# 	name = "dont_fire_if_missed_twice_in_segment"
-# 	segment_size = bsize//3 # 3 for 10x10 board
-# 	prev_action = None
-# 	prev_prev_action = None
-# 	reset_progress(name)
-# 	def perform_segment(a1,a2):
-# 		# check if 2 actions perform a segment (are in distance of segment_size at most)
-# 		return abs(a1[0]-a2[0]) <= segment_size and abs(a1[1]-a2[1]) <= segment_size
+@b_thread
+def dont_fire_if_missed_twice_in_segment():
+	"""This strategy goes up if we shoot a segment third time (which we already missed twice)"""
+	name = "dont_fire_if_missed_twice_in_segment"
+	prev_action = None
+	prev_prev_action = None
+	reset_strategy(name)
+	strategy = get_strategy(name)
+	# segment 0 - (0,0) to (4,4), segment 1 - (0,5) to (4,9), segment 2 - (5,0) to (9,4), segment 3 - (5,5) to (9,9)
+	segments = [((0,0),(4,4)), ((0,5),(4,9)), ((5,0),(9,4)), ((5,5),(9,9))]
 	
-# 	while True:
-# 		event = yield {waitFor: pred_all_events}
-# 		action = get_tuple_action(event.name)
-# 		hit_cells, not_hit_cells = state[0], state[1]
-# 		if prev_action and prev_prev_action:
-# 			# If previous action and current action missed:
-# 			if not_hit_cells[previous_action[0]][previous_action[1]] == 1 and not_hit_cells[prev_prev_action[0]][prev_prev_action[1]] == 1:
-# 				# if we are in the same segment:
-# 				if perform_segment(prev_action, prev_prev_action):
-# 					#  if the action is in the same segment as the previous 2 actions: add progress
-# 					if perform_segment(prev_action, action) and perform_segment(prev_prev_action, action):
-# 						add_progress(name)
-				
-# 		previous_action = action
-# 		prev_prev_action = previous_action
+	def get_segment(a):
+		# retrun the segment number of the action
+		for i, segment in enumerate(segments):
+			if segment[0][0] <= a[0] <= segment[1][0] and segment[0][1] <= a[1] <= segment[1][1]:
+				return i
 
-# def dont_fire_pairs():
-# 	"""This strategy goes up if we, in the first 20 moves, hit a pair of cells.
-# 	This is because we want to spread our fire, and shoot in places that differ by
-# 	the size of the smallest ship (2)"""
-# 	name = "dont_fire_pairs"
-# 	num_moves = bsize**2 // 5
-# 	previous_action = None
-# 	reset_progress(name)
-# 	for i in range(num_moves):
-# 		event = yield {waitFor: pred_all_events}
-# 		action = get_tuple_action(event.name)
+	def same_segment(a1,a2):
+		return get_segment(a1) == get_segment(a2)
 
-# 		hit_cells, not_hit_cells = state[0], state[1]
-# 		if previous_action and not_hit_cells[action[0]][action[1]] == 1:
-# 			if previous_action[0] == action[0] or previous_action[1] == action[1]:
-# 				add_progress(name)
-# 		else:
-# 			kill_progress(name)
-# 		previous_action = action
+	while True:
+		event = yield {waitFor: pred_all_events}
+		action = get_tuple_action(event.name)
+		reset_strategy(name) # reset strategy every time so it wont be active for more than 1 move
+		hit_cells, not_hit_cells = state[0], state[1]
+		if not (prev_action and prev_prev_action):
+			prev_action = action
+			prev_prev_action = prev_action
+			continue
+		if same_segment(prev_action, prev_prev_action):
+			if not_hit_cells[prev_action] == 1 and not_hit_cells[prev_prev_action] == 1:
+				segment = get_segment(prev_action)
+				segment_range = segments[segment]
+				# mark every possible action in the segment as 1 (dont fire there)
+				for x,y in product(range(segment_range[0][0], segment_range[1][0]+1), range(segment_range[0][1], segment_range[1][1]+1)):
+					strategy[x,y] = 1
+		
+		prev_action = action
+		prev_prev_action = prev_action
+		update_strategy(name, strategy)
+
+@b_thread
+def dont_fire_same_place():
+	"""This strategy goes up if we shoot the same place twice"""
+	name = "dont_fire_same_place"
+	reset_strategy(name)
+	strategy_space = get_strategy(name)
+	while True:
+		event = yield {waitFor: pred_all_events}
+		action = get_tuple_action(event.name)
+		strategy_space[action] = 1
+		reset_strategy(name)
+
+@b_thread
+def dont_fire_pairs():
+	"""This strategy goes up if we, in the first 20 moves, hit a pair of cells.
+	This is because we want to spread our fire, and shoot in places that differ by
+	the size of the smallest ship (2)"""
+	name = "dont_fire_pairs"
+	num_moves = bsize**2 // 5
+	previous_action = None
+	reset_strategy(name)
+	strategy_space
+	for i in range(num_moves):
+		event = yield {waitFor: pred_all_events}
+		action = get_tuple_action(event.name)
+
+		hit_cells, not_hit_cells = state[0], state[1]
+		if previous_action and not_hit_cells[action[0]][action[1]] == 1:
+			if previous_action[0] == action[0] or previous_action[1] == action[1]:
+				add_progress(name)
+		else:
+			kill_progress(name)
+		previous_action = action
 
 
 # # Not finished!
@@ -171,7 +202,9 @@ def fire_in_middle():
 
 
 
-strategies_bts = [fire_in_middle]
+strategies_bts = [fire_in_middle,
+		  		dont_fire_if_missed_twice_in_segment,
+				]
 # strategies_bts = [	fire_in_middle,
 # 		  			dont_fire_if_missed_twice_in_segment,
 # 					dont_fire_pairs,
