@@ -49,10 +49,18 @@ class BattleshipEnv(gym.Env):
         default_reward_dictionary = reward_dictionary or {  # todo further tuning of the rewards required
             'win': 100,
             'missed': 0,
-            'touched': 1,
-            'repeat_missed': -1,
-            'repeat_touched': -0.5
+            'touched': 0,
+            'repeat_missed': 0,
+            'repeat_touched': 0
             }
+        
+        # {  # todo further tuning of the rewards required
+        #     'win': 100,
+        #     'missed': 0,
+        #     'touched': 1,
+        #     'repeat_missed': -1,
+        #     'repeat_touched': -0.5
+        #     }
         self.reward_dictionary = {key: reward_dictionary.get(key, default_reward_dictionary[key]) for key in default_reward_dictionary.keys()}
 
         self.action_space = spaces.Discrete(self.board_size[0] * self.board_size[1])

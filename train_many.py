@@ -46,7 +46,6 @@ def main():
     parser.add_argument('--no_bp_strats','-nobp', action="store_true", help='Use BP strategies for the agent')
     parser.add_argument('--verbose','-v',type=int, default=0, help='Verbose level for the agent')
     parser.add_argument('--log_path','-log',type=str, default='./tensorboard_log/', help='Path to tensorboard log directory')
-    parser.add_argument('--resnet','-resnet', action="store_true", help='Use resnet for the agent')
     args = parser.parse_args()
 
 

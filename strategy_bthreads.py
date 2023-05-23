@@ -38,6 +38,9 @@ def reset_all_strategies():
 	for name in bthreads_progress:
 		reset_strategy(name)
 
+def kill_strategy(name):
+	reset_strategy(name)
+
 
 
 pred_all_events = EventSet(lambda event: True)
@@ -54,6 +57,11 @@ def get_tuple_action(action):
 		raise Exception("Action must be tuple or int, real type - ", type(action))
 	return action
 
+def adjacent_cells(action):
+		"""return a list of adjacent cells to action (which are not out of bounds)"""
+		x,y = action
+		adjacent = [(x-1,y), (x+1,y), (x,y-1), (x,y+1)]
+		return [(x,y) for x,y in adjacent if 0 <= x < bsize and 0 <= y < bsize]
 
 # We need this so we can choose any event, because bppy checks if event is selectable
 @b_thread
@@ -90,16 +98,19 @@ def fire_in_middle():
 			strategy[action] = 0
 			update_strategy(name, strategy)
 		else:
-			reset_strategy(name)
+			kill_strategy(name)
 			return 
 		
 		# hit_cells, not_hit_cells = state[0], state[1]
 
+	kill_strategy(name)
+
 
 @b_thread
 def dont_fire_if_missed_twice_in_segment():
-	"""This strategy goes up if we shoot a segment third time (which we already missed twice)"""
+	"""This strategy marks a segment if it was missed twice in a row, so to not fire there again the next turn (explore a bit) """
 	name = "dont_fire_if_missed_twice_in_segment"
+	number_of_turns = 30 # number of turns this strategy will be active
 	prev_action = None
 	prev_prev_action = None
 	reset_strategy(name)
@@ -116,10 +127,11 @@ def dont_fire_if_missed_twice_in_segment():
 	def same_segment(a1,a2):
 		return get_segment(a1) == get_segment(a2)
 
-	while True:
+	for i in range(number_of_turns):
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
 		reset_strategy(name) # reset strategy every time so it wont be active for more than 1 move
+		strategy = get_strategy(name)
 		hit_cells, not_hit_cells = state[0], state[1]
 		if not (prev_action and prev_prev_action):
 			prev_action = action
@@ -137,73 +149,130 @@ def dont_fire_if_missed_twice_in_segment():
 		prev_prev_action = prev_action
 		update_strategy(name, strategy)
 
+	kill_strategy(name)
+
 @b_thread
 def dont_fire_same_place():
-	"""This strategy goes up if we shoot the same place twice"""
+	"""This strategy marks every action that was fired as 1 (dont fire there)"""
 	name = "dont_fire_same_place"
 	reset_strategy(name)
-	strategy_space = get_strategy(name)
+	strategy = get_strategy(name)
 	while True:
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
-		strategy_space[action] = 1
-		reset_strategy(name)
+		strategy[action] = 1
+		update_strategy(name, strategy)
 
 @b_thread
 def dont_fire_pairs():
-	"""This strategy goes up if we, in the first 20 moves, hit a pair of cells.
+	"""This strategy marks adjacent cells to a cell that we fired and missed as 1 (dont fire there).
 	This is because we want to spread our fire, and shoot in places that differ by
 	the size of the smallest ship (2)"""
 	name = "dont_fire_pairs"
-	num_moves = bsize**2 // 5
+	num_moves = bsize**2 // 5 # 20 for 10x10 board - number of moves this strategy will be active
 	previous_action = None
 	reset_strategy(name)
-	strategy_space
+	strategy = get_strategy(name)
+
 	for i in range(num_moves):
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
-
 		hit_cells, not_hit_cells = state[0], state[1]
-		if previous_action and not_hit_cells[action[0]][action[1]] == 1:
-			if previous_action[0] == action[0] or previous_action[1] == action[1]:
-				add_progress(name)
-		else:
-			kill_progress(name)
+		if previous_action and not_hit_cells[previous_action] == 1:
+			# mark all adjacent cells as 1
+			for x,y in adjacent_cells(previous_action):
+				strategy[x,y] = 1
+		update_strategy(name, strategy)
 		previous_action = action
 
-
-# # Not finished!
-# def focus_on_one_ship():
-# 	"""	This strategy goes up if we hit a ship, and we then fire around the area we hit, in order
-# 	  	to encourage focusing a single ship to drown.
-# 		We will try hitting 2 other cells that are adjacent. 
-# 	"""
-# 	name = "focus_on_one_ship"
-# 	previous_action = None
-# 	reset_progress(name)
-# 	def distance(a1,a2):
-# 		return abs(a1[0]-a2[0]) + abs(a1[1]-a2[1])
-# 	while True:
-# 		event = yield {waitFor: pred_all_events}
-# 		action = get_tuple_action(event.name)
-# 		hit_cells, not_hit_cells = state[0], state[1]
-# 		if not previous_action:
-# 			previous_action = action
-# 		elif hit_cells[previous_action[0]][previous_action[1]] == 1: # if we hit a ship
-# 			if distance(previous_action, action) == 1: # if we hit a cell adjacent to the previous action
-# 				if hit_cells[action[0]][action[1]] == 0:
-# 					add_progress(name) # good move and keep trying another adjacent cell next time
-# 					previous_action = action
-# 				else: # Not hit a ship - try again and focus on the previous place that got hit
-# 					pass # dont change previous action because we want to focus on the place we hit
-# 			else:
-# 				kill_progress(name)
-# 				previous_action = action
+	kill_strategy(name)
 
 
+@b_thread
+def explore_hit_area():
+	""" This strategy marks all adjacent cells to a hit cell as 1 (encourage firing there)
+	"""
+	name = "focus_on_one_ship"
+	previous_action = None
+	reset_strategy(name)
+	strategy = get_strategy(name)
 
-strategies_bts = [fire_in_middle,
-		  		dont_fire_if_missed_twice_in_segment,
+	def distance(a1,a2):
+		return abs(a1[0]-a2[0]) + abs(a1[1]-a2[1])
+	
+	while True:
+		event = yield {waitFor: pred_all_events}
+		action = get_tuple_action(event.name)
+		# reset_strategy(name)
+		# strategy = get_strategy(name)
+		hit_cells, not_hit_cells = state[0], state[1]
+		if not previous_action:
+			previous_action = action
+			continue
+		if hit_cells[previous_action] == 1: # if we hit a ship
+			for cell in adjacent_cells(previous_action):
+				strategy[cell] = 1
+
+		update_strategy(name, strategy)
+		previous_action = action
+
+@b_thread
+def explore_hit_lines():
+	""" This strategy marks all adjacent cells to a hit lines as 1 (encourage firing there)
+	"""
+	name = "explore_hit_lines"
+	previous_action = None
+	reset_strategy(name)
+	strategy = get_strategy(name)
+
+	def distance(a1,a2):
+		return abs(a1[0]-a2[0]) + abs(a1[1]-a2[1])
+	
+	while True:
+		event = yield {waitFor: pred_all_events}
+		action = get_tuple_action(event.name)
+		hit_cells, not_hit_cells = state[0], state[1]
+		
+		# for each "line" (2 or more hits in a row) mark all adjacent cells in the row/col as 1
+		
+		if hit_cells[action] == 1: # if we hit a ship
+			if strategy[action] == 1: # if we already marked this cell as 1, we already explored this line
+				strategy[action] = 0 # no need to keep it marked
+			
+			# check if we hit a line
+			for cell in adjacent_cells(action):
+				if hit_cells[cell] == 1:
+					if cell[0] == action[0]: # same row - mark adjacent cells in row as 1 (encourage firing there)
+						row = action[0]
+						for j in range(action[1], bsize): # go right until we find a cell that wasnt hit
+							if hit_cells[row,j] == 0:
+								strategy[row,j] = 1
+								break
+						for j in range(action[1], -1, -1): # go left until we find a cell that wasnt hit
+							if hit_cells[row,j] == 0:
+								strategy[row,j] = 1
+								break
+
+					elif cell[1] == action[1]: # same col - mark adjacent cells in col as 1 (encourage firing there)
+						col = action[1]
+						for i in range(action[0], bsize): # go down until we find a cell that wasnt hit
+							if hit_cells[i,col] == 0:
+								strategy[i,col] = 1
+								break
+						for i in range(action[0], -1, -1): # go up until we find a cell that wasnt hit
+							if hit_cells[i,col] == 0:
+								strategy[i,col] = 1
+								break
+			update_strategy(name, strategy)
+
+			
+
+strategies_bts = [	fire_in_middle,
+		  			dont_fire_if_missed_twice_in_segment,
+					dont_fire_same_place,
+					dont_fire_pairs,
+					explore_hit_area,
+					explore_hit_lines,
 				]
 # strategies_bts = [	fire_in_middle,
 # 		  			dont_fire_if_missed_twice_in_segment,

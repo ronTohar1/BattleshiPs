@@ -44,8 +44,7 @@ class BPGymEnv(gymnasium.Env):
             self.bprog.choose_event(BEvent(str(self._get_tuple_action(action))))
             bp_obs = self._get_strategies_progress()
             observation = self._concat_observations(observation, bp_obs)
-            # print(obs_strats)
-            print(observation)
+            # print("Observation",observation)
     
         return observation, reward, terminated, truncated, info 
     
@@ -59,7 +58,7 @@ class BPGymEnv(gymnasium.Env):
             self._reset_strategies()
             obs_strats = self._get_strategies_progress()
             observation = self._concat_observations(observation, obs_strats)
-            print("reset observation:",observation)
+            # print("reset observation:",observation)
 
         return observation, info
     
