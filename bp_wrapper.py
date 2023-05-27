@@ -38,7 +38,7 @@ class BPwrapper():
 		# return None
 
 	def choose_event(self, event: BEvent):
-
+		# If there is an "update state" event, choose it, else choose the external event
 		if event not in self.selectable_events:
 			raise Exception("Tried to choose blocked event!")
 		self.listen(event)

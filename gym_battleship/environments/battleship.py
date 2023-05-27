@@ -49,9 +49,9 @@ class BattleshipEnv(gym.Env):
         default_reward_dictionary = reward_dictionary or {  # todo further tuning of the rewards required
             'win': 100,
             'missed': 0,
-            'touched': 0,
-            'repeat_missed': 0,
-            'repeat_touched': 0
+            'touched': 1,
+            'repeat_missed': -1,
+            'repeat_touched': -0.5
             }
         
         # {  # todo further tuning of the rewards required

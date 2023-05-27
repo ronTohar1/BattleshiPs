@@ -170,7 +170,6 @@ def dont_fire_pairs():
 	the size of the smallest ship (2)"""
 	name = "dont_fire_pairs"
 	num_moves = bsize**2 // 5 # 20 for 10x10 board - number of moves this strategy will be active
-	previous_action = None
 	reset_strategy(name)
 	strategy = get_strategy(name)
 
@@ -178,12 +177,11 @@ def dont_fire_pairs():
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
 		hit_cells, not_hit_cells = state[0], state[1]
-		if previous_action and not_hit_cells[previous_action] == 1:
+		if not_hit_cells[action] == 1:
 			# mark all adjacent cells as 1
-			for x,y in adjacent_cells(previous_action):
+			for x,y in adjacent_cells(action):
 				strategy[x,y] = 1
 		update_strategy(name, strategy)
-		previous_action = action
 
 	kill_strategy(name)
 
@@ -203,13 +201,10 @@ def explore_hit_area():
 	while True:
 		event = yield {waitFor: pred_all_events}
 		action = get_tuple_action(event.name)
-		# reset_strategy(name)
-		# strategy = get_strategy(name)
+		reset_strategy(name)
+		strategy = get_strategy(name)
 		hit_cells, not_hit_cells = state[0], state[1]
-		if not previous_action:
-			previous_action = action
-			continue
-		if hit_cells[previous_action] == 1: # if we hit a ship
+		if hit_cells[action] == 1: # if we hit a ship
 			for cell in adjacent_cells(previous_action):
 				strategy[cell] = 1
 
