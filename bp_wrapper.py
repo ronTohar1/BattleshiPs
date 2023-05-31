@@ -1,4 +1,7 @@
 from bppy import *
+from util import *
+
+
 
 # from eventsUtilities import EventHandler
 
@@ -23,27 +26,30 @@ class BPwrapper():
 		self.listener = self.bprog.listener
 		self.initialized = True
 
-	def advance_randomly(self) -> BEvent:
-		# if not self.is_game_finished():
-			# chosen_event = random.choice(tuple(self.selectable_events))
-			# self.choose_event(chosen_event)
-			# return chosen_event
+		self.update_internal_state()
 
+	def update_internal_state(self):
+		while any([e.name == UPDATE_STATE for e in self.selectable_events]):
+			# choose the update state event
+			update_state_event = [e for e in self.selectable_events if e.name == UPDATE_STATE][0]
+			self.choose_event(update_state_event)
+			self.update_selectable_events()
+
+	def update_selectable_events(self):
+		self.selectable_events = self.ess.selectable_events(self.tickets)
+
+	def advance_randomly(self) -> BEvent:
 		chosen_event = self.ess.select(self.tickets)
-		# print("selecteble events:", self.get_selectable_events())
-		# print("Chose ", chosen_event)
 		self.choose_event(chosen_event)
 		return chosen_event
 
-		# return None
-
 	def choose_event(self, event: BEvent):
-		# If there is an "update state" event, choose it, else choose the external event
 		if event not in self.selectable_events:
 			raise Exception("Tried to choose blocked event!")
 		self.listen(event)
 		self.bprog.advance_bthreads(event)
-		self.selectable_events = self.ess.selectable_events(self.tickets)
+		self.update_internal_state()
+		self.update_selectable_events()
 
 	# Just an idea for now, not sure if it's needed or possible.
 	def choose_external_event(self, event: BEvent):

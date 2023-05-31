@@ -2,6 +2,10 @@ from bppy import *
 from bp_wrapper import BPwrapper
 from strategy_bthreads import *
 
+class Dude:
+    def __init__(self,y):
+        self.x = 5
+        self.y = y.x
 
 def main():
     bthreads = create_strategies()
@@ -12,6 +16,7 @@ def main():
         bpw.advance_randomly()
     # bprog.run()
     # bpw.advance_randomly()
+
 
 if __name__ == '__main__':
     main()

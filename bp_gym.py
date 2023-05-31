@@ -7,6 +7,7 @@ from strategy_bthreads import create_strategies, number_of_bthreads, bthreads_pr
 import numpy as np
 from bppy import *
 from util import BOARD_SIZE
+from virtual_block_ess import VirtualBlockEventSelectionStrategy
 
 class BPGymEnv(gymnasium.Env):
     def __init__(self, env, add_strategies=False): # Expecting an environment with a gymnasium interface
@@ -32,6 +33,9 @@ class BPGymEnv(gymnasium.Env):
             raise Exception("Action must be tuple or int, real type - ", type(action))
         return action
 
+    # Concatenate the observations from the environment and the strategies
+    # env_obs - the observation from the environment (numpy array of 2 - 10x10 boards)
+    # bp_obs - the observation from the strategies (numpy array of x - 10x10 boards)
     def _concat_observations(self, env_obs, bp_obs):
         return np.concatenate((env_obs, bp_obs), axis=0)
 
@@ -42,7 +46,7 @@ class BPGymEnv(gymnasium.Env):
         if (self.add_strategies):
             # advance the bprogram
             self.bprog.choose_event(BEvent(str(self._get_tuple_action(action))))
-            bp_obs = self._get_strategies_progress()
+            bp_obs = self._get_bp_observation()
             observation = self._concat_observations(observation, bp_obs)
             # print("Observation",observation)
     
@@ -56,7 +60,7 @@ class BPGymEnv(gymnasium.Env):
 
         if (self.add_strategies):
             self._reset_strategies()
-            obs_strats = self._get_strategies_progress()
+            obs_strats = self._get_bp_observation()
             observation = self._concat_observations(observation, obs_strats)
             # print("reset observation:",observation)
 
@@ -68,11 +72,11 @@ class BPGymEnv(gymnasium.Env):
     def close(self):
         return self.env.close()
 
-    def _get_strategies_progress(self):
+    def _get_bp_observation(self):
         strategies = bthreads_progress.values()
         return np.array([np.array(strategy) for strategy in strategies])
     
     def _reset_strategies(self):
-        bprogram = BProgram(bthreads=create_strategies(), event_selection_strategy=SimpleEventSelectionStrategy())
+        bprogram = BProgram(bthreads=create_strategies(), event_selection_strategy=VirtualBlockEventSelectionStrategy())
         self.bprog.reset(bprogram)
         reset_all_strategies()
