@@ -44,8 +44,8 @@ class BPwrapper():
 		return chosen_event
 
 	def choose_event(self, event: BEvent):
-		if event not in self.selectable_events:
-			raise Exception("Tried to choose blocked event!")
+		# if event not in self.selectable_events:
+			# raise Exception("Tried to choose blocked event!")
 		self.listen(event)
 		self.bprog.advance_bthreads(event)
 		self.update_internal_state()

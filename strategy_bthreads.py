@@ -43,16 +43,7 @@ def reset_strategy(name):
 	bthreads_progress[name] = get_new_space()
 
 def update_strategy(name, space):
-	# if not strategy_space.contains(space):
-	# 	if np.can_cast(space.dtype, np.float32):
-	# 		raise Exception("space is not of type float32 and cannot be casted", space.dtype)
-		
-	# 	raise Exception(f"Strategy space does not contain the space given\nspace - {space}, strategy_space - {strategy_space}, shape = {space.shape},{strategy_space.shape}")
 	bthreads_progress[name] = space
-
-# put array of -1 in all places
-# def kill_strategy(name):
-# 	bthreads_progress[name] = np.array([[-1 for _ in range(bsize)] for _ in range(bsize)])
 
 def get_strategy(name):
 	return bthreads_progress[name]
@@ -96,10 +87,34 @@ def request_all_moves():
 		event = yield {request: moves, waitFor: pred_all_events}
 
 
+@b_thread
+def fire_in_middle():
+	name = "fire_in_middle"
+	num_moves = bsize**2 // 10 # 10 for 10x10 board - number of moves this strategy will be active
+	left_up, down_right = 2, bsize-3 # (2,2) to (7,7) for 10x10 board
+	moves = [(x,y) for x in range(left_up, down_right+1) for y in range(left_up, down_right+1)]
+	events = bevent_wrapper(moves)
+
+	strategy = get_new_space()
+	for move in moves:
+		strategy[move] = 1	
+	update_strategy(name, strategy)
+
+	for i in range(num_moves):
+		event = yield {waitFor: pred_all_events}
+		action = get_tuple_action(event.name)
+		if action in moves:
+			strategy[action] = 0
+			update_strategy(name, strategy)
+		else:
+			kill_strategy(name)
+			return 
+
 
 			
 
-strategies_bts = [ request_all_moves(),
+strategies_bts = [ fire_in_middle,
+		  	
 		  
 					]
 
