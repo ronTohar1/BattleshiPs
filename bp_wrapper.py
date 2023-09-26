@@ -47,7 +47,7 @@ class BPwrapper():
 		# if event not in self.selectable_events:
 			# raise Exception("Tried to choose blocked event!")
 		self.listen(event)
-		self.bprog.advance_bthreads(event)
+		self.bprog.advance_bthreads(self.bprog.tickets, event)
 		self.update_internal_state()
 		self.update_selectable_events()
 

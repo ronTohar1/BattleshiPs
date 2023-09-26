@@ -127,7 +127,11 @@ def main():
     elif policy == 'MlpPolicy':
         run_name += f"_af-{activation_fn_name}"
     run_name = run_name+("_BP" if using_strategies else "_NOPB")
-    agent.learn(total_timesteps=args.episodes, tb_log_name=run_name, reset_num_timesteps=True, log_interval=100, progress_bar=False)
+    # agent.learn(total_timesteps=args.episodes, tb_log_name=run_name, reset_num_timesteps=True, log_interval=100, progress_bar=False)
+    x = agent.policy.__str__()
+    print(x)
+    # print(PPO("CnnPolicy", gymnasium.make("CarRacing-v2")).policy)
+    # policy_kwargs={"features_extractor_kwargs": {"normalized_image":False}}
         
 if __name__ == '__main__':
     main()
